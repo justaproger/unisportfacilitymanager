@@ -33,39 +33,44 @@ const ManageUniversities = () => {
   }, [isAuthenticated, user, navigate]);
 
   // Fetch universities
-  const fetchUniversities = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await axios.get('/api/universities', {
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      // Fix: Handle different response formats to ensure universities is always an array
-      if (Array.isArray(response.data)) {
-        setUniversities(response.data);
-      } 
-      // Common API pattern where data is wrapped in an object
-      else if (response.data && Array.isArray(response.data.universities)) {
-        setUniversities(response.data.universities);
+  // Fetch universities
+const fetchUniversities = async () => {
+  try {
+    setLoading(true);
+    setError(null);
+    
+    const response = await axios.get('/api/universities', {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
       }
-      // If data exists but not in expected format, treat as empty array
-      else {
-        console.error('Unexpected API response format:', response.data);
-        setUniversities([]);
-      }
-      
-      setLoading(false);
-    } catch (err) {
-      console.error('Error fetching universities:', err);
-      setError(err.response?.data?.message || 'Failed to fetch universities');
-      setLoading(false);
+    });
+    
+    // Fix: Handle different response formats to ensure universities is always an array
+    if (Array.isArray(response.data)) {
+      setUniversities(response.data);
+    } 
+    // Handle response format: { success: true, count: X, data: [...] }
+    else if (response.data && Array.isArray(response.data.data)) {
+      setUniversities(response.data.data);
     }
-  };
+    // Common API pattern where data is wrapped in an object
+    else if (response.data && Array.isArray(response.data.universities)) {
+      setUniversities(response.data.universities);
+    }
+    // If data exists but not in expected format, treat as empty array
+    else {
+      console.error('Unexpected API response format:', response.data);
+      setUniversities([]);
+    }
+    
+    setLoading(false);
+  } catch (err) {
+    console.error('Error fetching universities:', err);
+    setError(err.response?.data?.message || 'Failed to fetch universities');
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     if (isAuthenticated && user?.role === 'super-admin') {

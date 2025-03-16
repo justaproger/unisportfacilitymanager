@@ -1,6 +1,6 @@
 const express = require('express');
 const { body } = require('express-validator');
-const { 
+const {
   getUniversities,
   getUniversity,
   createUniversity,
@@ -10,8 +10,43 @@ const {
   removeAdministrator
 } = require('../controllers/universityController');
 const { protect, authorize, belongsToUniversity } = require('../middleware/auth');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 const router = express.Router();
+
+// Ensure uploads directory exists
+const uploadDir = path.join(__dirname, '../uploads/logos');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Configure multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, uploadDir);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    const ext = file.originalname.split('.').pop();
+    cb(null, `university-${uniqueSuffix}.${ext}`);
+  }
+});
+
+const fileFilter = (req, file, cb) => {
+  if (file.mimetype.startsWith('image/')) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only images are allowed'), false);
+  }
+};
+
+const upload = multer({
+  storage: storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: fileFilter
+});
 
 // University validation rules
 const universityValidation = [
@@ -33,29 +68,29 @@ router.get('/:id', getUniversity);
 router.post(
   '/', 
   protect, 
-  authorize('super-admin'), 
-  universityValidation, 
+  authorize('super-admin'),
+  upload.single('logo'),
   createUniversity
 );
 
 router.delete(
   '/:id', 
   protect, 
-  authorize('super-admin'), 
+  authorize('super-admin'),
   deleteUniversity
 );
 
 router.post(
   '/:id/administrators', 
   protect, 
-  authorize('super-admin'), 
+  authorize('super-admin'),
   addAdministrator
 );
 
 router.delete(
   '/:id/administrators/:userId', 
   protect, 
-  authorize('super-admin'), 
+  authorize('super-admin'),
   removeAdministrator
 );
 
@@ -63,9 +98,9 @@ router.delete(
 router.put(
   '/:id', 
   protect, 
-  authorize('admin', 'super-admin'), 
-  belongsToUniversity, 
-  universityValidation, 
+  authorize('admin', 'super-admin'),
+  belongsToUniversity,
+  upload.single('logo'),
   updateUniversity
 );
 

@@ -2,7 +2,8 @@ import React, { useEffect } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { loadUser } from './redux/actions/authActions';
-
+import CreateUniversity from './pages/admin/CreateUniversity';
+import EditUniversity from './pages/admin/EditUniversity';
 // Layout Components
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
@@ -140,6 +141,20 @@ const App = () => {
             <ManageUniversities />
           </AdminLayout>
         </ProtectedRoute>
+      } />
+      <Route path="/admin/universities/create" element={
+        <ProtectedRoute allowedRoles={['super-admin']}>
+          <AdminLayout>
+            <CreateUniversity />
+          </AdminLayout>
+        </ProtectedRoute>
+      } />
+      <Route path="/admin/universities/:id/edit" element={
+        <ProtectedRoute allowedRoles={['super-admin']}>
+          <AdminLayout>
+            <EditUniversity />
+          </AdminLayout>
+      </ProtectedRoute>
       } />
       <Route path="/admin/facilities" element={
         <ProtectedRoute allowedRoles={['admin', 'super-admin']}>

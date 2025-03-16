@@ -1,0 +1,4 @@
+node_modules/
+backend.rar
+project.rar
+frontend.rar

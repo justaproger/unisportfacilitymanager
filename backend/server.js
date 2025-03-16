@@ -1,66 +1,56 @@
-require('dotenv').config();
-const http = require('http');
-const app = require('./app');
+const express = require('express');
+const cors = require('cors');
+const morgan = require('morgan');
+const dotenv = require('dotenv');
 const { connectDB } = require('./config/db');
+const { errorHandler } = require('./middleware/errorMiddleware');
 
-// Create HTTP server
-const server = http.createServer(app);
+// Load env vars
+dotenv.config();
 
-// Socket.io setup for real-time updates
-const io = require('socket.io')(server, {
-  cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
-    methods: ['GET', 'POST']
-  }
+// Connect to database
+connectDB();
+
+// Route imports
+const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
+const universityRoutes = require('./routes/universityRoutes');
+const facilityRoutes = require('./routes/facilityRoutes');
+const bookingRoutes = require('./routes/bookingRoutes');
+
+const app = express();
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(morgan('dev'));
+
+// Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/universities', universityRoutes);
+app.use('/api/facilities', facilityRoutes);
+app.use('/api/bookings', bookingRoutes);
+
+// Base route
+app.get('/', (req, res) => {
+  res.json({ message: 'Welcome to University Booking API' });
 });
 
-// Socket.io connection handler
-io.on('connection', (socket) => {
-  console.log('A user connected:', socket.id);
-  
-  // Join university-specific room for real-time updates
-  socket.on('joinUniversity', (universityId) => {
-    socket.join(`university-${universityId}`);
-  });
-  
-  // Join facility-specific room
-  socket.on('joinFacility', (facilityId) => {
-    socket.join(`facility-${facilityId}`);
-  });
-  
-  socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
-  });
-});
+// Error handling middleware
+app.use(errorHandler);
 
-// Make io accessible to the rest of the application
-app.set('io', io);
-
-// Set port
+// Define PORT
 const PORT = process.env.PORT || 5000;
 
-// Connect to database then start server
-const startServer = async () => {
-  try {
-    await connectDB();
-    server.listen(PORT, () => {
-      console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-    });
-  } catch (error) {
-    console.error('Failed to connect to MongoDB:', error.message);
-    process.exit(1);
-  }
-};
-
-startServer();
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+});
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
-  console.log('UNHANDLED REJECTION! Shutting down...');
-  console.error(err.name, err.message);
-  server.close(() => {
-    process.exit(1);
-  });
+  console.log(`Error: ${err.message}`);
+  // Close server & exit process
+  process.exit(1);
 });
-
-
